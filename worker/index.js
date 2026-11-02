@@ -3,7 +3,7 @@ import { analizza, trovaPaginaProdotto } from '../public/lib/checks.js';
 
 const MAX_BYTES = 2_000_000;
 const TIMEOUT_MS = 10_000;
-const USER_AGENT = 'CheckupEcommerceIT/0.1 (controllo conformita; +https://github.com/)';
+const USER_AGENT = 'Mozilla/5.0 (compatible; CheckupEcommerceIT/0.2; +https://checkup-ecommerce.mfilippocer.workers.dev/)';
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -36,6 +36,15 @@ export function normalizzaUrl(input) {
   return u;
 }
 
+function erroreHttp(status) {
+  let msg = `Il sito ha risposto con errore ${status}.`;
+  if ([401, 403, 429, 503].includes(status)) msg = `Il sito blocca i controlli automatici (errore ${status}). Succede con alcuni sistemi anti-bot: il controllo da qui non è possibile.`;
+  else if (status === 404) msg = 'Il sito risponde "pagina non trovata" (errore 404). Prova a incollare l’indirizzo completo copiato dal browser, per esempio https://www.negozio.it/.';
+  const e = new Error(msg);
+  e.status = status;
+  return e;
+}
+
 async function scarica(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -45,7 +54,7 @@ async function scarica(url) {
       signal: controller.signal,
       headers: { 'user-agent': USER_AGENT, accept: 'text/html,application/xhtml+xml', 'accept-language': 'it-IT,it;q=0.9' },
     });
-    if (!res.ok) throw new Error(`Il sito ha risposto con errore ${res.status}.`);
+    if (!res.ok) throw erroreHttp(res.status);
     const type = res.headers.get('content-type') || '';
     if (type && !/html/i.test(type)) throw new Error('L’indirizzo non restituisce una pagina web.');
     const reader = res.body.getReader();
@@ -75,7 +84,19 @@ async function scarica(url) {
 
 export async function controlla(target, fetchPage = scarica) {
   const url = normalizzaUrl(target);
-  const home = await fetchPage(url.toString());
+  let home;
+  try {
+    home = await fetchPage(url.toString());
+  } catch (e) {
+    // Many shops only answer on www. (or only on the bare domain): try the other one once.
+    const alt = new URL(url);
+    alt.hostname = url.hostname.startsWith('www.') ? url.hostname.slice(4) : `www.${url.hostname}`;
+    try {
+      home = await fetchPage(alt.toString());
+    } catch {
+      throw e;
+    }
+  }
   let product = null;
   const productUrl = trovaPaginaProdotto(home.url, home.html);
   if (productUrl) {

@@ -108,3 +108,21 @@ test('discount detection needs a real struck-through price', () => {
   assert.equal(hasDiscountMarkup('<del><span>49,00&nbsp;€</span></del> <ins>29,00 €</ins>'), true);
   assert.equal(hasDiscountMarkup('<span class="onsale">Offerta!</span>'), true);
 });
+
+test('falls back to www. when the bare domain fails', async () => {
+  const fetchPage = async (url) => {
+    if (url === 'https://www.negozio.it/') return { url, html: fx('negozio-conforme.html') };
+    if (url === 'https://www.negozio.it/products/felpa-grigia') return { url, html: fx('prodotto-conforme.html') };
+    throw new Error('Il sito ha risposto con errore 404.');
+  };
+  const r = await controlla('negozio.it', fetchPage);
+  assert.equal(r.url, 'https://www.negozio.it/');
+  await assert.rejects(controlla('altro.it', fetchPage), /404/);
+});
+
+test('labels are not repeated and support links count as contacts', () => {
+  const links = extractLinks('<a href="/cgv" title="Condizioni generali di vendita">Condizioni generali di vendita</a>');
+  assert.equal(links[0].text, 'Condizioni generali di vendita');
+  const r = byId(analizza({ home: { url: 'https://x.it/', html: '<a href="/pages/help">Assistenza clienti</a>' } }));
+  assert.equal(r.contatti.esito, 'ok');
+});

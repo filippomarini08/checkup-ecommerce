@@ -52,8 +52,14 @@ export function extractLinks(html) {
   let m;
   while ((m = re.exec(clean))) {
     const visible = htmlToText(m[3]);
-    const label = [visible, attr(m[2], 'aria-label'), attr(m[2], 'title')]
-      .filter((t) => t && !LOOKS_LIKE_CODE.test(t))
+    const parts = [];
+    for (const t of [visible, attr(m[2], 'aria-label'), attr(m[2], 'title')]) {
+      const v = (t || '').replace(/\s+/g, ' ').trim();
+      if (!v || LOOKS_LIKE_CODE.test(v)) continue;
+      if (parts.some((p) => p.toLowerCase().includes(v.toLowerCase()))) continue;
+      parts.push(v);
+    }
+    const label = parts
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim()
@@ -181,7 +187,7 @@ export function analizza(pages) {
 
   // 3. Funzione di recesso (pulsante)
   const recessoFunzione = linkText(/recedi|recesso\s+(online|qui|dal\s+contratto)|esercita(re)?\s+(il\s+)?(diritto\s+di\s+)?recesso|richied[ia]\s+(il\s+)?recesso|modulo\s+(di\s+)?recesso|withdraw(al)?\s+(button|form|from)|widerruf/i);
-  const recessoInfo = linkText(/recesso|resi\b|reso\b|returns?|refund/i);
+  const recessoInfo = linkText(/recesso|resi\b|reso\b|rimbors|restituzion|returns?|refund/i);
   if (recessoFunzione.length) {
     risultati.push(check('recesso', 'Funzione di recesso online', ESITI.OK, `Trovato: "${etichetta(recessoFunzione[0], 60)}". Verifica che funzioni senza login e invii una conferma su supporto durevole (email).`, '', 'recesso'));
   } else if (recessoInfo.length) {
@@ -219,7 +225,7 @@ export function analizza(pages) {
 
   // 7. Contatti
   const email = /[\w.+-]+@[\w-]+\.[\w.-]+/.test(homeText) || /href\s*=\s*["']mailto:/i.test(home.html);
-  const contattiLink = linkText(/contatt|contact/i);
+  const contattiLink = linkText(/contatt|contact|assistenza|customer\s*(care|service)|servizio\s+clienti|supporto|support|help|aiuto|scrivici|^tel:|wa\.me|whatsapp/i);
   risultati.push(
     email || contattiLink.length
       ? check('contatti', 'Contatti del venditore', ESITI.OK, email ? 'Trovato un indirizzo email.' : 'Trovata una pagina contatti.', '', 'info')
