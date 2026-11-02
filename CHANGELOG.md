@@ -11,7 +11,8 @@
 - Contatti: riconosciuti anche assistenza clienti, supporto, help, telefono e WhatsApp
 - Recesso: riconosciute le pagine "rimborsi" e "restituzioni"
 - Le etichette dei link non vengono più ripetute due volte
-- 20 test automatici
+- Pagine quasi vuote (verifiche anti-robot, siti solo JavaScript) non vengono più valutate
+- 21 test automatici
 
 ## 0.1.1 — 2026-11-02
 - Corretto: il testo dei link non include più codice JavaScript dei temi (script e stili esclusi prima dell'analisi)

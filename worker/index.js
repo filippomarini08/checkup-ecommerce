@@ -1,5 +1,5 @@
 // Cloudflare Worker: serves the static site and the /api/check endpoint.
-import { analizza, htmlToText, trovaPaginaProdotto } from '../public/lib/checks.js';
+import { analizza, extractLinks, htmlToText, trovaPaginaProdotto } from '../public/lib/checks.js';
 
 const MAX_BYTES = 2_000_000;
 const TIMEOUT_MS = 10_000;
@@ -108,6 +108,11 @@ export async function controlla(target, fetchPage = scarica) {
     } catch {
       throw e;
     }
+  }
+  // A real shop home page always has navigation. Almost no links means we got a
+  // challenge page or a JavaScript-only shell, and scoring it would be misleading.
+  if (extractLinks(home.html).length < 3 || htmlToText(home.html).length < 80) {
+    throw new Error('Il sito ha restituito una pagina quasi vuota, probabilmente una verifica anti-robot o una pagina che si carica solo con JavaScript. Per non darti un risultato sbagliato, non lo valuto. Capita soprattutto con i grandi marketplace come Amazon.');
   }
   let product = null;
   const productUrl = trovaPaginaProdotto(home.url, home.html);

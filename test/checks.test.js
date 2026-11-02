@@ -139,3 +139,8 @@ test('foreign sites get a notice, query strings do not trigger matches, bot wall
   assert.equal(isBotWall('<html><body><h4>Enter the characters you see below</h4><form></form></body></html>'), true);
   assert.equal(isBotWall(fx('negozio-conforme.html') + '<script src="https://www.google.com/recaptcha/api.js"></script>'), false);
 });
+
+test('nearly empty home pages are refused instead of scored', async () => {
+  const fetchPage = async (url) => ({ url, html: '<html><body><form><button>Continua</button></form></body></html>' });
+  await assert.rejects(controlla('grande-marketplace.it', fetchPage), /quasi vuota/);
+});
