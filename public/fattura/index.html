@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leggi la fattura elettronica XML o P7M e salvala in PDF, gratis | Check-up E-commerce</title>
+  <meta name="description" content="Apri una fattura elettronica XML o firmata P7M e trasformala in un documento leggibile da stampare o salvare in PDF. Gratis, senza registrazione: il file non lascia il tuo computer.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/">Check-up E-commerce</a>
+      <nav>
+        <a href="/">Check-up</a>
+        <a href="/fattura/" aria-current="page">Leggi fattura XML</a>
+        <a href="/guide/">Guide</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="hero">
+      <h1>Leggi una fattura elettronica XML o P7M</h1>
+      <p class="lead">Trascina qui la fattura: la vedi come un normale documento e la salvi in PDF. Funziona anche con i file firmati .p7m.</p>
+      <label class="drop" id="drop" for="file">
+        <strong>Trascina qui uno o più file .xml o .p7m</strong>
+        <span class="muted">oppure tocca per sceglierli</span>
+        <input id="file" type="file" accept=".xml,.p7m,application/xml,text/xml" multiple hidden>
+      </label>
+      <p class="note">Il file viene letto solo dal tuo browser: non lo carichiamo su nessun server.</p>
+    </div>
+
+    <div id="errors" class="no-print"></div>
+    <div id="out"></div>
+    <div class="actions no-print" id="actions" hidden>
+      <button class="btn" id="print" type="button">Stampa o salva in PDF</button>
+      <button class="btn secondary" id="reset" type="button">Apri un altro file</button>
+    </div>
+
+    <section class="no-print">
+      <h2>Come funziona</h2>
+      <ul class="list-plain">
+        <li>Legge le fatture nel formato dell'Agenzia delle Entrate (FatturaPA, verso privati e PA).</li>
+        <li>Apre i file firmati digitalmente .p7m senza bisogno di programmi di firma.</li>
+        <li>Mostra fornitore, cliente, righe, IVA, scadenze e IBAN, e ti fa scaricare gli allegati.</li>
+        <li>Per il PDF usa "Stampa" e scegli "Salva come PDF".</li>
+      </ul>
+      <p class="muted">Non verifica la validità della firma digitale né l'esito dell'invio allo SDI.</p>
+    </section>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <p>Strumento gratuito. Non costituisce consulenza fiscale.</p>
+      <p>[Titolare, indirizzo e partita IVA: da inserire prima della pubblicazione] · <a href="/privacy/">Privacy</a></p>
+    </div>
+  </footer>
+
+  <script type="module" src="/assets/fattura.js"></script>
+</body>
+</html>

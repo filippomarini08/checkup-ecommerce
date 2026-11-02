@@ -1,0 +1,105 @@
+// Cloudflare Worker: serves the static site and the /api/check endpoint.
+import { analizza, trovaPaginaProdotto } from '../public/lib/checks.js';
+
+const MAX_BYTES = 2_000_000;
+const TIMEOUT_MS = 10_000;
+const USER_AGENT = 'CheckupEcommerceIT/0.1 (controllo conformita; +https://github.com/)';
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+    },
+  });
+}
+
+const PRIVATE_HOST = /^(localhost|.*\.local|.*\.internal|0\.0\.0\.0|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|\[?::1\]?|\[?f[cd][0-9a-f]{2}:.*)$/i;
+
+/** Normalise user input into a public http(s) URL, or throw a user-facing message. */
+export function normalizzaUrl(input) {
+  let s = String(input || '').trim();
+  if (!s) throw new Error('Inserisci l’indirizzo del negozio.');
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  let u;
+  try {
+    u = new URL(s);
+  } catch {
+    throw new Error('L’indirizzo non è valido.');
+  }
+  if (!['http:', 'https:'].includes(u.protocol)) throw new Error('Sono ammessi solo indirizzi http o https.');
+  if (u.port && !['80', '443'].includes(u.port)) throw new Error('Porta non ammessa.');
+  if (u.username || u.password) throw new Error('L’indirizzo non deve contenere credenziali.');
+  if (PRIVATE_HOST.test(u.hostname) || !u.hostname.includes('.')) throw new Error('Questo indirizzo non è un sito pubblico.');
+  u.hash = '';
+  return u;
+}
+
+async function scarica(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: { 'user-agent': USER_AGENT, accept: 'text/html,application/xhtml+xml', 'accept-language': 'it-IT,it;q=0.9' },
+    });
+    if (!res.ok) throw new Error(`Il sito ha risposto con errore ${res.status}.`);
+    const type = res.headers.get('content-type') || '';
+    if (type && !/html/i.test(type)) throw new Error('L’indirizzo non restituisce una pagina web.');
+    const reader = res.body.getReader();
+    const chunks = [];
+    let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > MAX_BYTES) break;
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(chunks.reduce((s, c) => s + c.length, 0));
+    let o = 0;
+    for (const c of chunks) {
+      bytes.set(c, o);
+      o += c.length;
+    }
+    return { url: res.url || url.toString(), html: new TextDecoder('utf-8').decode(bytes) };
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Il sito non ha risposto in tempo.');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function controlla(target, fetchPage = scarica) {
+  const url = normalizzaUrl(target);
+  const home = await fetchPage(url.toString());
+  let product = null;
+  const productUrl = trovaPaginaProdotto(home.url, home.html);
+  if (productUrl) {
+    try {
+      product = await fetchPage(productUrl);
+    } catch {
+      product = null;
+    }
+  }
+  return analizza({ home, product });
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/check') {
+      if (request.method !== 'GET') return json({ errore: 'Metodo non ammesso.' }, 405);
+      try {
+        const report = await controlla(url.searchParams.get('url'));
+        return json(report);
+      } catch (e) {
+        return json({ errore: e.message || 'Errore imprevisto.' }, 400);
+      }
+    }
+    return env.ASSETS.fetch(request);
+  },
+};

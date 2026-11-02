@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Check-up gratuito del tuo e-commerce: è a norma nel 2026? | Check-up E-commerce</title>
+  <meta name="description" content="Inserisci l'indirizzo del tuo negozio online e scopri in 20 secondi se rispetta gli obblighi italiani ed europei: pulsante di recesso, prezzo più basso degli ultimi 30 giorni, partita IVA, cookie e altro.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/">Check-up E-commerce</a>
+      <nav>
+        <a href="/" aria-current="page">Check-up</a>
+        <a href="/fattura/">Leggi fattura XML</a>
+        <a href="/guide/">Guide</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="hero">
+      <h1>Il tuo negozio online è a norma?</h1>
+      <p class="lead">Inserisci l'indirizzo del tuo e-commerce: in pochi secondi controllo 11 obblighi italiani ed europei, compreso il pulsante di recesso obbligatorio dal 19 giugno 2026.</p>
+      <form class="form" id="form" novalidate>
+        <label for="url" class="sr-only" hidden>Indirizzo del negozio</label>
+        <input id="url" name="url" type="text" inputmode="url" autocomplete="url" placeholder="www.iltuonegozio.it" required>
+        <button class="btn" id="go" type="submit">Controlla gratis</button>
+      </form>
+      <p class="note">Gratis e senza registrazione. Leggo solo le pagine pubbliche del sito, come farebbe un cliente.</p>
+    </div>
+
+    <section id="esito" hidden aria-live="polite"></section>
+
+    <section>
+      <h2>Cosa controllo</h2>
+      <ul class="list-plain">
+        <li><strong>Funzione di recesso online</strong>, obbligatoria dal 19 giugno 2026 (art. 54-bis Codice del consumo).</li>
+        <li><strong>Prezzo più basso degli ultimi 30 giorni</strong> accanto agli sconti (art. 17-bis Codice del consumo).</li>
+        <li><strong>Partita IVA nella home page</strong> (art. 35 DPR 633/1972).</li>
+        <li><strong>Informazioni di sicurezza dei prodotti</strong>: produttore e avvertenze (Regolamento UE 2023/988).</li>
+        <li><strong>Riferimenti alla piattaforma ODR</strong>, chiusa il 20 luglio 2025 e da togliere.</li>
+        <li><strong>Condizioni di vendita, privacy, banner cookie, contatti, HTTPS e accessibilità.</strong></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Domande frequenti</h2>
+      <details>
+        <summary>Il check-up sostituisce un avvocato o un consulente?</summary>
+        <p>No. È un controllo automatico che cerca nelle pagine pubbliche gli elementi richiesti dalle norme. Ti dice cosa ha trovato e cosa no, con il riferimento normativo, così sai dove guardare. Per i casi dubbi serve un professionista.</p>
+      </details>
+      <details>
+        <summary>Salvate i dati del mio negozio?</summary>
+        <p>No. Leggo le pagine, ti mostro il risultato e non conservo nulla.</p>
+      </details>
+      <details>
+        <summary>Funziona con Shopify, WooCommerce, PrestaShop?</summary>
+        <p>Sì, con qualsiasi negozio online pubblico. Controllo la home page e, quando la trovo, una scheda prodotto.</p>
+      </details>
+      <details>
+        <summary>Perché un controllo è segnato come "da verificare"?</summary>
+        <p>Alcune cose si capiscono solo guardando il sito per intero, per esempio se il pulsante di recesso funziona davvero senza login. In quei casi ti segnalo cosa ho visto e cosa controllare a mano.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <p>Check-up E-commerce è un controllo automatico e non costituisce consulenza legale o fiscale.</p>
+      <p>[Titolare, indirizzo e partita IVA: da inserire prima della pubblicazione] · <a href="/privacy/">Privacy</a></p>
+    </div>
+  </footer>
+
+  <script type="module" src="/assets/checkup.js"></script>
+</body>
+</html>
