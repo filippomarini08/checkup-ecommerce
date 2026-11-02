@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { analizza, extractLinks, htmlToText, trovaPaginaProdotto } from '../public/lib/checks.js';
+import { analizza, extractLinks, hasDiscountMarkup, htmlToText, trovaPaginaProdotto } from '../public/lib/checks.js';
 import { isValidPartitaIva } from '../public/lib/piva.js';
 import { controlla, normalizzaUrl } from '../worker/index.js';
 
@@ -81,4 +81,30 @@ test('end-to-end with a fake fetcher', async () => {
   const r = await controlla('negozio.it', fetchPage);
   assert.equal(r.paginaProdotto, 'https://negozio.it/products/felpa-grigia');
   assert.equal(r.punteggio, 100);
+});
+
+test('Shopify-like theme: no script leaks, no phantom discount, policy links found', () => {
+  const home = fx('shopify-home.html');
+  const links = extractLinks(home);
+  assert.ok(links.every((l) => !/[{};]/.test(l.text)), 'link text must not contain code');
+  const r = byId(analizza({
+    home: { url: 'https://negozio-esempio.it/', html: home },
+    product: { url: 'https://negozio-esempio.it/products/maglia-blu', html: fx('shopify-prodotto.html') },
+  }));
+  assert.equal(r['partita-iva'].esito, 'ok');
+  assert.equal(r.condizioni.esito, 'ok');
+  assert.match(r.condizioni.dettaglio, /Termini del servizio/);
+  assert.equal(r.recesso.esito, 'attenzione');
+  assert.match(r.recesso.dettaglio, /Informativa sui rimborsi/);
+  assert.doesNotMatch(r.recesso.dettaglio, /[{};]/);
+  assert.equal(r['prezzo-30-giorni'].esito, 'info');
+  assert.equal(r['sicurezza-prodotto'].esito, 'ok');
+});
+
+test('discount detection needs a real struck-through price', () => {
+  assert.equal(hasDiscountMarkup('<div class="price__sale"><s class="price-item"></s>€29,00</div>'), false);
+  assert.equal(hasDiscountMarkup('<script>var t="<s>€49,00</s>"</script>'), false);
+  assert.equal(hasDiscountMarkup('<div class="price price--on-sale"><s>€49,00</s> €29,00</div>'), true);
+  assert.equal(hasDiscountMarkup('<del><span>49,00&nbsp;€</span></del> <ins>29,00 €</ins>'), true);
+  assert.equal(hasDiscountMarkup('<span class="onsale">Offerta!</span>'), true);
 });

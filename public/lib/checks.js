@@ -36,16 +36,37 @@ function attr(attrs, name) {
 }
 
 /** Links and buttons with their visible text (plus aria-label/title). */
+/** Remove blocks whose content is never visible markup (scripts, styles, comments). */
+export function stripNonVisible(html) {
+  return String(html || '')
+    .replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ');
+}
+
+const LOOKS_LIKE_CODE = /[{};]|=>|function\s*\(|\b(let|const|var|return)\s/;
+
 export function extractLinks(html) {
   const out = [];
-  const re = /<(a|button)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
+  const re = /<(a|button)\b([^>]*)>([\s\S]*?)<\/\1\s*>/gi;
+  const clean = stripNonVisible(html);
   let m;
-  while ((m = re.exec(String(html || '')))) {
+  while ((m = re.exec(clean))) {
     const visible = htmlToText(m[3]);
-    const label = [visible, attr(m[2], 'aria-label'), attr(m[2], 'title')].filter(Boolean).join(' ');
-    out.push({ tag: m[1].toLowerCase(), href: attr(m[2], 'href'), text: label.replace(/\s+/g, ' ').trim() });
+    const label = [visible, attr(m[2], 'aria-label'), attr(m[2], 'title')]
+      .filter((t) => t && !LOOKS_LIKE_CODE.test(t))
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 120);
+    out.push({ tag: m[1].toLowerCase(), href: attr(m[2], 'href'), text: label });
   }
   return out;
+}
+
+/** Text to show the user for a matched link: its label, or its address. */
+function etichetta(link, max) {
+  const t = link.text || link.href || '';
+  return t.length > max ? t.slice(0, max - 1) + '…' : t;
 }
 
 const FONTI = {
@@ -97,7 +118,7 @@ function check(id, titolo, esito, dettaglio, comeRisolvere, fonteKey) {
 }
 
 function findPartitaIva(text) {
-  const labelled = /(?:p\.?\s?iva|partita\s+iva|vat(?:\s+(?:no\.?|number|id))?|c\.?\s?f\.?\s*(?:e|\/|-)\s*p\.?\s?iva)\s*[:.\-–]?\s*(?:n\.?\s*)?((?:IT)?\s?\d[\d\s]{9,14}\d)/gi;
+  const labelled = /\b(?:p\.?\s?iva|partita\s+iva|vat(?:\s+(?:no\.?|number|id))?)[^\d\n]{0,25}?((?:IT)?\s?\d[\d\s]{9,14}\d)/gi;
   const found = [];
   let m;
   while ((m = labelled.exec(text))) {
@@ -111,13 +132,20 @@ function findPartitaIva(text) {
   return found;
 }
 
-function hasDiscountMarkup(html) {
-  return (
-    /<(s|del|strike)\b[^>]*>[\s\S]{0,80}?\d[\d.,]*\s*(?:€|&euro;|eur)/i.test(html) ||
-    /(?:€|&euro;)\s*\d[\d.,]*\s*<\/(s|del|strike)>/i.test(html) ||
-    /class\s*=\s*["'][^"']*(compare-at|price--on-sale|price__sale|price--sale|sale-price|old-price|price-old|regular-price|was-price|onsale)[^"']*["']/i.test(html) ||
-    /data-compare-at-price\s*=\s*["']?\d/i.test(html)
-  );
+/**
+ * True only when the page shows an actual struck-through price, or a class that
+ * themes add exclusively to discounted items. Theme templates (e.g. Shopify Dawn)
+ * always ship an empty "price__sale" block and a compare-at <s>, so class names
+ * like those are not evidence of a discount on their own.
+ */
+export function hasDiscountMarkup(html) {
+  const clean = stripNonVisible(html);
+  const strike = /<(s|del|strike)\b[^>]*>([\s\S]{0,300}?)<\/\1\s*>/gi;
+  let m;
+  while ((m = strike.exec(clean))) {
+    if (/\d/.test(htmlToText(m[2]))) return true;
+  }
+  return /class\s*=\s*["'](?:[^"']*\s)?(price--on-sale|onsale|old-price|price-old|was-price)(?:\s[^"']*)?["']/i.test(clean);
 }
 
 /**
@@ -155,18 +183,18 @@ export function analizza(pages) {
   const recessoFunzione = linkText(/recedi|recesso\s+(online|qui|dal\s+contratto)|esercita(re)?\s+(il\s+)?(diritto\s+di\s+)?recesso|richied[ia]\s+(il\s+)?recesso|modulo\s+(di\s+)?recesso|withdraw(al)?\s+(button|form|from)|widerruf/i);
   const recessoInfo = linkText(/recesso|resi\b|reso\b|returns?|refund/i);
   if (recessoFunzione.length) {
-    risultati.push(check('recesso', 'Funzione di recesso online', ESITI.OK, `Trovato: "${recessoFunzione[0].text.slice(0, 60)}". Verifica che funzioni senza login e invii una conferma su supporto durevole (email).`, '', 'recesso'));
+    risultati.push(check('recesso', 'Funzione di recesso online', ESITI.OK, `Trovato: "${etichetta(recessoFunzione[0], 60)}". Verifica che funzioni senza login e invii una conferma su supporto durevole (email).`, '', 'recesso'));
   } else if (recessoInfo.length) {
-    risultati.push(check('recesso', 'Funzione di recesso online', ESITI.ATTENZIONE, `Ho trovato una pagina informativa ("${recessoInfo[0].text.slice(0, 50)}"), ma non un pulsante o modulo per recedere. Dal 19 giugno 2026 serve una funzione dedicata, accessibile come l’acquisto.`, 'Aggiungi un pulsante "Recedi dal contratto" sempre visibile (per esempio nel footer), che porti a un modulo in due passaggi con conferma via email. Su Shopify esistono app gratuite che lo fanno.', 'recesso'));
+    risultati.push(check('recesso', 'Funzione di recesso online', ESITI.ATTENZIONE, `Ho trovato una pagina informativa ("${etichetta(recessoInfo[0], 50)}"), ma non un pulsante o modulo per recedere. Dal 19 giugno 2026 serve una funzione dedicata, accessibile come l’acquisto.`, 'Aggiungi un pulsante "Recedi dal contratto" sempre visibile (per esempio nel footer), che porti a un modulo in due passaggi con conferma via email. Su Shopify esistono app gratuite che lo fanno.', 'recesso'));
   } else {
     risultati.push(check('recesso', 'Funzione di recesso online', ESITI.MANCA, 'Non ho trovato né un pulsante di recesso né una pagina su resi e recesso.', 'Aggiungi la pagina con le condizioni di recesso e un pulsante "Recedi dal contratto" con modulo in due passaggi e conferma via email.', 'recesso'));
   }
 
   // 4. Condizioni di vendita
-  const condizioni = linkText(/condizioni\s+(generali\s+)?(di\s+)?vendita|termini\s+(e|&)\s+condizioni|termini\s+di\s+servizio|terms\s+(of\s+)?(service|sale)|terms\s*(&|and)\s*conditions/i);
+  const condizioni = linkText(/condizioni\s+generali|condizioni\s+(di\s+)?vendita|termini\s+(e|&)\s+condizioni|termini\s+(di|del|dei)\s+servizi|termini\s+d.uso|terms\s+(of\s+)?(service|sale)|terms\s*(&|and)\s*conditions|\/policies\/terms-of-service|condizioni-(generali-)?(di-)?vendita|termini-e-condizioni|terms-and-conditions/i);
   risultati.push(
     condizioni.length
-      ? check('condizioni', 'Condizioni generali di vendita', ESITI.OK, `Trovato il link "${condizioni[0].text.slice(0, 50)}".`, '', 'info')
+      ? check('condizioni', 'Condizioni generali di vendita', ESITI.OK, `Trovato il link "${etichetta(condizioni[0], 50)}".`, '', 'info')
       : check('condizioni', 'Condizioni generali di vendita', ESITI.MANCA, 'Non ho trovato un link alle condizioni di vendita.', 'Pubblica le condizioni generali di vendita (prezzi, consegna, garanzia, recesso) e collegale dal footer e dal checkout.', 'info')
   );
 

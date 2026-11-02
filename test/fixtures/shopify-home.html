@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Negozio Tema Shopify</title>
+<script>
+  // Theme scripts often contain markup inside strings: it must not become a link.
+  class Drawer extends HTMLElement{constructor(){super();this.tpl='<a href="/policies/refund-policy">{let y=s(E);function A(v){let x=y(this,v);return x}}</a>'}}
+</script>
+<script type="application/json" id="product-json">{"compare_at_price":null,"price":2900}</script>
+<style>.price__sale{display:none}.price--on-sale .price__sale{display:block}</style>
+</head>
+<body>
+<header><a href="/" class="header__heading-link">Negozio</a><a href="/collections/all">Catalogo</a></header>
+<main>
+  <div class="card">
+    <a href="/products/maglia-blu">Maglia blu</a>
+    <div class="price">
+      <div class="price__container">
+        <div class="price__regular"><span class="visually-hidden">Prezzo di listino</span><span class="price-item price-item--regular">€29,00 EUR</span></div>
+        <div class="price__sale">
+          <span class="visually-hidden">Prezzo di listino</span>
+          <span><s class="price-item price-item--regular"></s></span>
+          <span class="visually-hidden">Prezzo scontato</span>
+          <span class="price-item price-item--sale price-item--last">€29,00 EUR</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="footer">
+  <p>Negozio Esempio di Mario Rossi &middot; Via Roma 1, Rimini &middot; P. IVA n. 01000000016 &middot; info@negozio-esempio.it</p>
+  <ul class="policies list-unstyled">
+    <li><a href="/policies/refund-policy">Informativa sui rimborsi</a></li>
+    <li><a href="/policies/privacy-policy">Informativa sulla privacy</a></li>
+    <li><a href="/policies/terms-of-service">Termini del servizio</a></li>
+    <li><a href="/policies/shipping-policy">Informativa sulle spedizioni</a></li>
+  </ul>
+</footer>
+</body>
+</html>
