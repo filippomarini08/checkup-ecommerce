@@ -118,6 +118,14 @@ const CMP_PATTERNS = [
 ];
 const TRACKER_PATTERNS = [/googletagmanager\.com/i, /gtag\(/i, /fbq\(/i, /connect\.facebook\.net/i, /hotjar/i, /tiktok\.com\/i18n\/pixel|analytics\.tiktok\.com/i, /clarity\.ms/i];
 
+function hostOf(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return '';
+  }
+}
+
 function check(id, titolo, esito, dettaglio, comeRisolvere, fonteKey) {
   const f = FONTI[fonteKey] || { norma: '', fonte: '' };
   return { id, titolo, esito, dettaglio, comeRisolvere, norma: f.norma, fonte: f.fonte };
@@ -164,7 +172,8 @@ export function analizza(pages) {
   const homeText = htmlToText(home.html);
   const allHtml = [home.html, product ? product.html : ''].join('\n');
   const links = extractLinks(home.html).concat(product ? extractLinks(product.html) : []);
-  const linkText = (re) => links.filter((l) => re.test(l.text) || re.test(l.href));
+  const hrefPath = (h) => String(h || '').split(/[?#]/)[0];
+  const linkText = (re) => links.filter((l) => re.test(l.text) || re.test(hrefPath(l.href)));
   const risultati = [];
 
   // 1. HTTPS
@@ -197,7 +206,7 @@ export function analizza(pages) {
   }
 
   // 4. Condizioni di vendita
-  const condizioni = linkText(/condizioni\s+generali|condizioni\s+(di\s+)?vendita|termini\s+(e|&)\s+condizioni|termini\s+(di|del|dei)\s+servizi|termini\s+d.uso|terms\s+(of\s+)?(service|sale)|terms\s*(&|and)\s*conditions|\/policies\/terms-of-service|condizioni-(generali-)?(di-)?vendita|termini-e-condizioni|terms-and-conditions/i);
+  const condizioni = linkText(/condizioni\s+generali|condizioni\s+(di\s+)?vendita|termini\s+(e|&)\s+condizioni|termini\s+(di|del|dei)\s+servizi|termini\s+d.uso|terms\s+(of\s+)?(service|sale|use)|conditions\s+of\s+(use|sale)|terms\s*(&|and)\s*conditions|\/policies\/terms-of-service|condizioni-(generali-)?(di-)?vendita|termini-e-condizioni|terms-and-conditions/i);
   risultati.push(
     condizioni.length
       ? check('condizioni', 'Condizioni generali di vendita', ESITI.OK, `Trovato il link "${etichetta(condizioni[0], 50)}".`, '', 'info')
@@ -276,8 +285,13 @@ export function analizza(pages) {
   const valutati = risultati.filter((r) => r.esito !== ESITI.INFO);
   const ok = valutati.filter((r) => r.esito === ESITI.OK).length;
   const punteggio = valutati.length ? Math.round((ok / valutati.length) * 100) : 0;
+  const lang = (/<html\b[^>]*\blang\s*=\s*["']?([a-z]{2})/i.exec(home.html) || [])[1];
+  const italiano = /\.it$/i.test(hostOf(home.url)) || (lang ? lang.toLowerCase() === 'it' : true);
   return {
     url: home.url,
+    avviso: italiano
+      ? null
+      : 'Questo sito non sembra rivolto al pubblico italiano. Il check-up verifica le regole per chi vende online a consumatori in Italia: per siti esteri molti risultati non sono significativi.',
     paginaProdotto: product ? product.url : null,
     punteggio,
     riepilogo: {

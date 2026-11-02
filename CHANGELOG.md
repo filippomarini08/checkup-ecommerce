@@ -1,13 +1,17 @@
 # Changelog
 
 ## 0.2.0 — 2026-11-02
+- Avviso per i siti esteri: il check-up è pensato per chi vende a consumatori in Italia
+- Pagine anti-robot (captcha, "Just a moment...") riconosciute e segnalate invece di essere analizzate
+- I parametri degli indirizzi (es. `?returnUrl=`) non fanno più scattare falsi riconoscimenti
+- Condizioni di vendita: riconosciuti anche "Conditions of Use" e "Terms of Use"
 - Titolare indicato nel footer e nella pagina privacy (con diritti dell'interessato e hosting)
 - Se il dominio non risponde, il check-up riprova con o senza `www.`
 - Messaggi chiari quando il sito blocca i controlli automatici (403, 429, 503) o risponde 404
 - Contatti: riconosciuti anche assistenza clienti, supporto, help, telefono e WhatsApp
 - Recesso: riconosciute le pagine "rimborsi" e "restituzioni"
 - Le etichette dei link non vengono più ripetute due volte
-- 19 test automatici
+- 20 test automatici
 
 ## 0.1.1 — 2026-11-02
 - Corretto: il testo dei link non include più codice JavaScript dei temi (script e stili esclusi prima dell'analisi)

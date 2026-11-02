@@ -1,5 +1,5 @@
 // Cloudflare Worker: serves the static site and the /api/check endpoint.
-import { analizza, trovaPaginaProdotto } from '../public/lib/checks.js';
+import { analizza, htmlToText, trovaPaginaProdotto } from '../public/lib/checks.js';
 
 const MAX_BYTES = 2_000_000;
 const TIMEOUT_MS = 10_000;
@@ -34,6 +34,16 @@ export function normalizzaUrl(input) {
   if (PRIVATE_HOST.test(u.hostname) || !u.hostname.includes('.')) throw new Error('Questo indirizzo non è un sito pubblico.');
   u.hash = '';
   return u;
+}
+
+/** Captcha or challenge pages that big shops show to automated visitors: short pages with a challenge. */
+export function isBotWall(html) {
+  const text = htmlToText(html);
+  if (text.length > 1500) return false;
+  return (
+    /<title>[^<]*(just a moment|attention required|access denied|accesso negato|robot check|captcha)/i.test(html) ||
+    /enter the characters you see|are you a robot|sei un robot|verify you are (a )?human|verifica di essere un essere umano/i.test(text)
+  );
 }
 
 function erroreHttp(status) {
@@ -73,7 +83,9 @@ async function scarica(url) {
       bytes.set(c, o);
       o += c.length;
     }
-    return { url: res.url || url.toString(), html: new TextDecoder('utf-8').decode(bytes) };
+    const html = new TextDecoder('utf-8').decode(bytes);
+    if (isBotWall(html)) throw new Error('Il sito ha mostrato una pagina di verifica anti-robot al posto del negozio, quindi non posso controllarlo in automatico.');
+    return { url: res.url || url.toString(), html };
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('Il sito non ha risposto in tempo.');
     throw e;

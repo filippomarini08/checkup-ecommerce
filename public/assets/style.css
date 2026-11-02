@@ -140,3 +140,5 @@ article.guide .updated { color: var(--ink-soft); font-size: 0.9rem; margin-botto
 article.guide p, article.guide li { font-size: 1.03rem; }
 .cta { background: var(--accent-soft); border-radius: var(--radius); padding: 18px 20px; margin: 26px 0; }
 .cta p { margin: 0 0 10px; }
+
+.avviso { background: #fff6d5; border: 1px solid #e8d48a; border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }

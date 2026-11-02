@@ -32,6 +32,7 @@ function render(r) {
       )
     )
   );
+  if (r.avviso) out.append(el('p', { class: 'avviso' }, r.avviso));
   const order = { manca: 0, attenzione: 1, ok: 2, info: 3 };
   const list = el('ul', { class: 'checks' });
   for (const c of [...r.risultati].sort((a, b) => order[a.esito] - order[b.esito])) {

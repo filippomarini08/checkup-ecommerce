@@ -126,3 +126,16 @@ test('labels are not repeated and support links count as contacts', () => {
   const r = byId(analizza({ home: { url: 'https://x.it/', html: '<a href="/pages/help">Assistenza clienti</a>' } }));
   assert.equal(r.contatti.esito, 'ok');
 });
+
+test('foreign sites get a notice, query strings do not trigger matches, bot walls are spotted', async () => {
+  const { isBotWall } = await import('../worker/index.js');
+  const html = '<html lang="en"><body><a href="/prefs?preferencesReturnUrl=%2F">EN</a><a href="/gp/help/customer/display.html?nodeId=508088">Conditions of Use</a></body></html>';
+  const r = analizza({ home: { url: 'https://www.shop.com/', html } });
+  assert.match(r.avviso, /pubblico italiano/);
+  const by = byId(r);
+  assert.equal(by.recesso.esito, 'manca');
+  assert.equal(by.condizioni.esito, 'ok');
+  assert.equal(analizza({ home: { url: 'https://negozio.it/', html } }).avviso, null);
+  assert.equal(isBotWall('<html><body><h4>Enter the characters you see below</h4><form></form></body></html>'), true);
+  assert.equal(isBotWall(fx('negozio-conforme.html') + '<script src="https://www.google.com/recaptcha/api.js"></script>'), false);
+});
